@@ -122,35 +122,64 @@ const renderChart = () => {
       plotAreaBackground: { color: '#b7d2a5' }
     },
     title: {
-      text: 'Вовлеченность и лояльность по годам'
+      text: 'Вовлеченность и лояльность по годам',
+      style: {
+        color: '#000000'
+      }
     },
     subtitle: {
-      text: 'Источник: внутренняя аналитика HappyInc'
+      text: 'Источник: внутренняя аналитика HappyInc',
+      style: {
+        color: '#000000'
+      }
     },
     xAxis: {
       type: 'category',
       title: {
-        text: 'Год'
+        text: 'Год',
+        style: {
+          color: '#000000'
+        }
+      },
+      labels: {
+        style: {
+          color: '#000000'
+        }
       }
     },
     yAxis: {
       min: 0,
       max: 100,
       title: {
-        text: 'Процент сотрудников'
+        text: 'Процент сотрудников',
+        style: {
+          color: '#000000'
+        }
       },
       labels: {
-        format: '{value}%'
+        format: '{value}%',
+        style: {
+          color: '#000000'
+        }
       }
     },
     tooltip: {
+      style: {
+        color: '#000000'
+      },
       valueSuffix: '%'
     },
     plotOptions: {
       column: {
         borderRadius: 6,
         pointPadding: 0.08,
-        groupPadding: 0.12
+        groupPadding: 0.12,
+        dataLabels: {
+          style: {
+            color: '#000000',
+            textOutline: 'none'
+          }
+        }
       }
     },
     colors: ['#8fcf9f', '#5eaf79'],
@@ -176,9 +205,16 @@ onBeforeUnmount(() => {
 .comparison-card {
   border-radius: 12px;
   transition: all 0.3s ease;
+  color: #000000;
 
   &:hover {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  :deep(.q-item__label),
+  :deep(.q-item__label--caption),
+  :deep(.text-caption) {
+    color: #000000;
   }
 
   .comparison-chart {
@@ -200,7 +236,7 @@ onBeforeUnmount(() => {
 
   .highcharts-description {
     margin-top: 8px;
-    color: #6b7280;
+    color: #000000;
     font-size: 12px;
   }
 
@@ -215,7 +251,7 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #000000;
     font-weight: 600;
     font-size: 14px;
 
@@ -234,7 +270,7 @@ onBeforeUnmount(() => {
     padding: 12px;
     background: #e9f6ed;
     border-radius: 8px;
-    color: #2f7e4e;
+    color: #000000;
   }
 }
 </style>

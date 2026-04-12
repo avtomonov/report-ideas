@@ -38,26 +38,48 @@ const chartOptions = computed(() => ({
     plotAreaBackground: { color: '#d5e88c' }
   },
   title: {
-    text: 'Оценка метрики «Счастье» по департаментам'
+    text: 'Оценка метрики «Счастье» по департаментам',
+    style: {
+      color: '#000000'
+    }
   },
   subtitle: {
-    text: 'Диапазон оценок сотрудников по шкале от 0 до 9'
+    text: 'Диапазон оценок сотрудников по шкале от 0 до 9',
+    style: {
+      color: '#000000'
+    }
   },
   xAxis: {
     categories: happinessRatings.value.map((dept) => dept.name),
     lineColor: '#d9dce3',
-    tickColor: '#d9dce3'
+    tickColor: '#d9dce3',
+    labels: {
+      style: {
+        color: '#000000'
+      }
+    }
   },
   yAxis: {
     min: 0,
     max: 9,
     tickInterval: 1,
     title: {
-      text: 'Оценка сотрудников'
+      text: 'Оценка сотрудников',
+      style: {
+        color: '#000000'
+      }
     },
-    gridLineColor: '#eef1f6'
+    gridLineColor: '#eef1f6',
+    labels: {
+      style: {
+        color: '#000000'
+      }
+    }
   },
   tooltip: {
+    style: {
+      color: '#000000'
+    },
     formatter() {
       return `<b>${this.point.category}</b><br/>Оценка: <b>${this.point.low} - ${this.point.high}</b> из 9`
     }
@@ -69,7 +91,11 @@ const chartOptions = computed(() => ({
       borderColor: '#2e7d32',
       dataLabels: {
         enabled: true,
-        format: '{point.low} - {point.high}'
+        format: '{point.low} - {point.high}',
+        style: {
+          color: '#000000',
+          textOutline: 'none'
+        }
       }
     }
   },
@@ -135,7 +161,7 @@ onBeforeUnmount(() => {
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #6b7280;
+  color: #000000;
 }
 
 .ranking-chart-canvas {

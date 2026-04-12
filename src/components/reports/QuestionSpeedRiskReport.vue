@@ -99,27 +99,62 @@ const chartOptions = computed(() => ({
     plotAreaBackground: { color: '#b7d2a5' }
   },
   title: {
-    text: 'Скорость ответов по секундам'
+    text: 'Скорость ответов по секундам',
+    style: {
+      color: '#000000'
+    }
   },
   subtitle: {
-    text: 'Текущий цикл vs предыдущий цикл'
+    text: 'Текущий цикл vs предыдущий цикл',
+    style: {
+      color: '#000000'
+    }
   },
   xAxis: {
     categories: currentData.map((item) => `${item.second}`),
-    title: { text: 'Секунды на вопрос' }
+    title: {
+      text: 'Секунды на вопрос',
+      style: {
+        color: '#000000'
+      }
+    },
+    labels: {
+      style: {
+        color: '#000000'
+      }
+    }
   },
   yAxis: {
-    title: { text: 'Доля ответов, %' },
+    title: {
+      text: 'Доля ответов, %',
+      style: {
+        color: '#000000'
+      }
+    },
     max: 10,
-    gridLineColor: '#ecf0f4'
+    gridLineColor: '#ecf0f4',
+    labels: {
+      style: {
+        color: '#000000'
+      }
+    }
   },
   tooltip: {
     shared: true,
+    style: {
+      color: '#000000'
+    },
     valueSuffix: '%'
   },
   legend: {
     align: 'center',
-    verticalAlign: 'bottom'
+    verticalAlign: 'bottom',
+    itemStyle: {
+      color: '#000000'
+    },
+    itemHoverStyle: {
+      color: '#000000'
+    }
   },
   credits: { enabled: false },
   series: [
@@ -190,24 +225,24 @@ onBeforeUnmount(() => {
 
 .kpi-label {
   font-size: 11px;
-  color: #64748b;
+  color: #000000;
   margin-bottom: 6px;
 }
 
 .kpi-value {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: #000000;
 }
 
 .kpi-value.danger {
-  color: #dc2626;
+  color: #000000;
 }
 
 .highcharts-description {
   margin: 10px 0 0;
   font-size: 12px;
-  color: #64748b;
+  color: #000000;
 }
 
 @media (max-width: 900px) {

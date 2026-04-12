@@ -25,6 +25,8 @@ const departments = [
   { id: 6, name: 'Операции', engagement: 74, loyalty: 76, satisfaction: 75, employees: 134, trend: 4 }
 ]
 
+const sortedDepartments = computed(() => [...departments].sort((a, b) => b.employees - a.employees))
+
 const getCategoryDistribution = (dept) => {
   const metrics = [dept.engagement, dept.loyalty, dept.satisfaction]
   
@@ -45,11 +47,11 @@ const getCategoryDistribution = (dept) => {
   }
 }
 
-const veryPoorData = computed(() => departments.map(d => getCategoryDistribution(d).veryPoor))
-const poorData = computed(() => departments.map(d => getCategoryDistribution(d).poor))
-const mediumData = computed(() => departments.map(d => getCategoryDistribution(d).medium))
-const goodData = computed(() => departments.map(d => getCategoryDistribution(d).good))
-const excellentData = computed(() => departments.map(d => getCategoryDistribution(d).excellent))
+const veryPoorData = computed(() => sortedDepartments.value.map(d => getCategoryDistribution(d).veryPoor))
+const poorData = computed(() => sortedDepartments.value.map(d => getCategoryDistribution(d).poor))
+const mediumData = computed(() => sortedDepartments.value.map(d => getCategoryDistribution(d).medium))
+const goodData = computed(() => sortedDepartments.value.map(d => getCategoryDistribution(d).good))
+const excellentData = computed(() => sortedDepartments.value.map(d => getCategoryDistribution(d).excellent))
 
 const chartOptions = computed(() => ({
   chart: {
@@ -98,7 +100,7 @@ const chartOptions = computed(() => ({
     },
     lineWidth: 0,
     gridLineWidth: 0,
-    categories: departments.map(d => `${d.name}\n(${d.employees})`)
+    categories: sortedDepartments.value.map(d => `${d.name}\n(${d.employees})`)
   },
   yAxis: {
     lineWidth: 0,

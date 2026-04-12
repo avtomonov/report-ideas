@@ -67,34 +67,26 @@
 
       <div class="top-themes">
         <div class="themes-label">Топ-темы этого месяца</div>
-        <div class="theme-list">
-          <div class="theme-row">
-            <div class="theme-name">Гибкий график работы</div>
-            <div class="progress-wrapper flex theme-bar">
-              <div class="progress-bar" :style="{ width: '75%', backgroundColor: '#b7d2a5' }"></div>
-            </div>
-            <div class="theme-count">245</div>
+        <div class="theme-list sparkline-table">
+          <div class="theme-row header">
+            <div class="theme-name">Тема</div>
+            <div class="theme-count">Всего</div>
+            <div class="theme-trend">Тренд</div>
           </div>
-          <div class="theme-row">
-            <div class="theme-name">Развитие карьеры</div>
-            <div class="progress-wrapper flex theme-bar">
-              <div class="progress-bar" :style="{ width: '68%', backgroundColor: '#d5e88c' }"></div>
+
+          <div
+            v-for="(theme, index) in topThemes"
+            :key="theme.name"
+            class="theme-row"
+          >
+            <div class="theme-name">{{ theme.name }}</div>
+            <div class="theme-count">{{ theme.count }}</div>
+            <div class="theme-trend">
+              <div
+                class="sparkline-canvas"
+                :ref="(el) => setSparklineRef(el, index)"
+              ></div>
             </div>
-            <div class="theme-count">198</div>
-          </div>
-          <div class="theme-row">
-            <div class="theme-name">Зарплата и льготы</div>
-            <div class="progress-wrapper flex theme-bar">
-              <div class="progress-bar" :style="{ width: '61%', backgroundColor: '#fde993' }"></div>
-            </div>
-            <div class="theme-count">154</div>
-          </div>
-          <div class="theme-row">
-            <div class="theme-name">Командное сотрудничество</div>
-            <div class="progress-wrapper flex theme-bar">
-              <div class="progress-bar" :style="{ width: '58%', backgroundColor: '#ffc184' }"></div>
-            </div>
-            <div class="theme-count">142</div>
           </div>
         </div>
       </div>
@@ -110,11 +102,127 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import Highcharts from 'highcharts'
+import 'highcharts/modules/accessibility'
+import 'highcharts/themes/adaptive'
 
 const positive = ref(523)
 const neutral = ref(356)
 const negative = ref(321)
+
+const topThemes = [
+  { name: 'Гибкий график работы', count: 245, trend: [48, 56, 64, 75], color: '#7dbb86' },
+  { name: 'Развитие карьеры', count: 198, trend: [40, 45, 58, 68], color: '#9dc16a' },
+  { name: 'Зарплата и льготы', count: 154, trend: [36, 43, 55, 61], color: '#d0b23f' },
+  { name: 'Командное сотрудничество', count: 142, trend: [34, 39, 50, 58], color: '#cf9458' }
+]
+
+const sparklineRefs = ref([])
+const sparklineCharts = []
+
+const setSparklineRef = (el, index) => {
+  sparklineRefs.value[index] = el
+}
+
+const buildSparkline = (container, theme) => {
+  return Highcharts.chart(container, {
+    chart: {
+      type: 'area',
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      margin: [2, 0, 2, 0],
+      width: null,
+      height: 28,
+      style: {
+        overflow: 'visible'
+      }
+    },
+    title: {
+      text: null
+    },
+    credits: {
+      enabled: false
+    },
+    exporting: {
+      enabled: false
+    },
+    legend: {
+      enabled: false
+    },
+    xAxis: {
+      labels: {
+        enabled: false
+      },
+      title: {
+        text: null
+      },
+      startOnTick: false,
+      endOnTick: false,
+      tickPositions: []
+    },
+    yAxis: {
+      labels: {
+        enabled: false
+      },
+      title: {
+        text: null
+      },
+      startOnTick: false,
+      endOnTick: false,
+      tickPositions: []
+    },
+    tooltip: {
+      hideDelay: 0,
+      outside: true,
+      shared: true,
+      headerFormat: `<span style="font-size: 10px">${theme.name}, неделя {point.x}:</span><br/>`,
+      pointFormat: '<b>{point.y}</b> упоминаний'
+    },
+    plotOptions: {
+      series: {
+        animation: false,
+        lineWidth: 1.5,
+        shadow: false,
+        marker: {
+          enabled: false
+        },
+        fillOpacity: 0.2
+      }
+    },
+    series: [
+      {
+        data: theme.trend,
+        pointStart: 1,
+        color: theme.color
+      }
+    ]
+  })
+}
+
+const renderSparklines = async () => {
+  await nextTick()
+
+  sparklineCharts.forEach((chart) => chart.destroy())
+  sparklineCharts.length = 0
+
+  topThemes.forEach((theme, index) => {
+    const container = sparklineRefs.value[index]
+    if (!container) return
+
+    const chart = buildSparkline(container, theme)
+    sparklineCharts.push(chart)
+  })
+}
+
+onMounted(() => {
+  renderSparklines()
+})
+
+onBeforeUnmount(() => {
+  sparklineCharts.forEach((chart) => chart.destroy())
+  sparklineCharts.length = 0
+})
 </script>
 
 <style scoped lang="scss">
@@ -228,51 +336,67 @@ const negative = ref(321)
   }
 
   .top-themes {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #ffffff;
+    overflow: hidden;
+
     .themes-label {
       font-weight: 600;
-      margin-bottom: 12px;
-      color: #333;
+      margin: 0;
+      padding: 10px 12px;
+      color: #000000;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
     }
 
     .theme-list {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
     }
 
     .theme-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(160px, 1.6fr) 72px minmax(140px, 1fr);
       align-items: center;
       gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #eef2f7;
+
+      &.header {
+        font-size: 11px;
+        font-weight: 600;
+        color: #000000;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        background: #f8fafc;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
 
       .theme-name {
-        min-width: 150px;
+        min-width: 0;
         font-size: 13px;
-        color: #333;
+        color: #000000;
       }
 
-      .progress-wrapper {
-        height: 6px;
-        background: #e0e0e0;
-        border-radius: 3px;
-        overflow: hidden;
+      .theme-trend {
+        min-width: 120px;
       }
 
-      .progress-bar {
-        height: 100%;
-        border-radius: 3px;
-        transition: width 0.3s ease;
-      }
-
-      .theme-bar {
-        height: 6px;
+      .sparkline-canvas {
+        width: 100%;
+        min-height: 28px;
       }
 
       .theme-count {
-        min-width: 30px;
+        min-width: 40px;
         text-align: right;
         font-size: 13px;
-        color: #999;
+        color: #000000;
         font-weight: 500;
       }
     }
@@ -284,7 +408,20 @@ const negative = ref(321)
     padding: 12px;
     background: #e3f2fd;
     border-radius: 8px;
-    color: #1976d2;
+    color: #000000;
+  }
+
+  @media (max-width: 700px) {
+    .top-themes {
+      .theme-row {
+        grid-template-columns: 1fr 56px;
+        row-gap: 6px;
+
+        .theme-trend {
+          grid-column: 1 / -1;
+        }
+      }
+    }
   }
 }
 </style>
