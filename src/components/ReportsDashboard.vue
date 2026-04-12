@@ -27,10 +27,6 @@
       </section>
     </div>
 
-    <!-- Footer with last update -->
-    <div class="dashboard-footer q-mt-lg q-pt-md text-center text-caption">
-      Последнее обновление: {{ formatDate(lastUpdate) }}
-    </div>
 
     <div class="likes-overview q-mt-md">
       <div class="likes-overview__head">
