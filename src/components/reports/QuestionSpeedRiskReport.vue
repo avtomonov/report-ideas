@@ -141,8 +141,9 @@ const chartOptions = computed(() => ({
   },
   tooltip: {
     shared: true,
+    className: 'white-tooltip',
     style: {
-      color: '#000000'
+      color: '#ffffff'
     },
     valueSuffix: '%'
   },
@@ -202,6 +203,14 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .highcharts-figure {
   margin: 0;
+}
+
+:deep(.highcharts-tooltip.white-tooltip),
+:deep(.highcharts-tooltip.white-tooltip text),
+:deep(.highcharts-tooltip.white-tooltip tspan),
+:deep(.highcharts-tooltip.white-tooltip span) {
+  color: #ffffff !important;
+  fill: #ffffff !important;
 }
 
 .chart-canvas {
