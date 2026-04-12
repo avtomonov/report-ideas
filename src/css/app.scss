@@ -1,6 +1,12 @@
 body {
   font-family: 'GothamPro', Arial, sans-serif;
   background: #f8fafc;
+  min-width: 1000px;
+}
+
+html,
+#q-app {
+  min-width: 1000px;
 }
 
 .sales-header {
