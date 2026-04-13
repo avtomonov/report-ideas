@@ -45,7 +45,7 @@ const renderMap = async () => {
   if (!mapRef.value) return
 
   const topology = await fetch(
-    'https://code.highcharts.com/mapdata/countries/ru/ru-all.topo.json'
+    '/mapdata/countries/ru/ru-all.topo.json'
   ).then((response) => response.json())
 
   const data = buildRegionData(topology)

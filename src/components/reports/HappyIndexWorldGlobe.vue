@@ -123,7 +123,8 @@ const renderSea = (activeChart) => {
 const renderChart = async () => {
   if (!globeRef.value) return
 
-  const topology = await fetch('https://code.highcharts.com/mapdata/custom/world.topo.json')
+  // Используем локальный файл вместо запроса
+  const topology = await fetch('/mapdata/custom/world.topo.json')
     .then((response) => response.json())
 
   chart = Highcharts.mapChart(globeRef.value, {
