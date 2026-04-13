@@ -1,14 +1,25 @@
-const memoryStore = globalThis.__reportLikesStore || {}
-globalThis.__reportLikesStore = memoryStore
+import { Redis } from '@upstash/redis'
 
-const kvUrl = process.env.KV_REST_API_URL
-const kvToken = process.env.KV_REST_API_TOKEN
-const kvKey = 'report_likes'
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
+const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
+const redisKey = 'report_likes'
+const redis = redisUrl && redisToken
+  ? new Redis({
+      url: redisUrl,
+      token: redisToken
+    })
+  : null
 
 const sendJson = (res, statusCode, payload) => {
   res.statusCode = statusCode
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
   res.end(JSON.stringify(payload))
+}
+
+const createHttpError = (statusCode, message) => {
+  const error = new Error(message)
+  error.statusCode = statusCode
+  return error
 }
 
 const readBody = (req) => {
@@ -33,38 +44,24 @@ const readBody = (req) => {
   })
 }
 
-const fetchKv = async (commandParts) => {
-  if (!kvUrl || !kvToken) {
-    return null
+const requireRedis = () => {
+  if (!redis) {
+    throw createHttpError(
+      503,
+      'Likes storage is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
+    )
   }
 
-  const endpoint = `${kvUrl}/${commandParts.join('/')}`
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${kvToken}`
-    }
-  })
-
-  if (!response.ok) {
-    throw new Error(`KV request failed: ${response.status}`)
-  }
-
-  return response.json()
+  return redis
 }
 
 const getAllLikes = async () => {
-  if (!kvUrl || !kvToken) {
-    return { ...memoryStore }
-  }
-
-  const payload = await fetchKv(['hgetall', kvKey])
-  const list = payload?.result || []
+  const client = requireRedis()
+  const rawLikes = await client.hgetall(redisKey)
   const likes = {}
 
-  for (let i = 0; i < list.length; i += 2) {
-    const key = list[i]
-    const value = Number(list[i + 1])
+  for (const [key, rawValue] of Object.entries(rawLikes || {})) {
+    const value = Number(rawValue)
     likes[key] = Number.isFinite(value) ? value : 0
   }
 
@@ -72,15 +69,8 @@ const getAllLikes = async () => {
 }
 
 const incrementLike = async (reportId, delta) => {
-  if (!kvUrl || !kvToken) {
-    const current = Number(memoryStore[reportId] || 0)
-    const next = current + delta
-    memoryStore[reportId] = next
-    return next
-  }
-
-  const payload = await fetchKv(['hincrby', kvKey, reportId, String(delta)])
-  const value = Number(payload?.result)
+  const client = requireRedis()
+  const value = Number(await client.hincrby(redisKey, reportId, delta))
   return Number.isFinite(value) ? value : 0
 }
 
@@ -88,7 +78,10 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       const likes = await getAllLikes()
-      sendJson(res, 200, { likes })
+      sendJson(res, 200, {
+        likes,
+        storage: 'upstash-redis'
+      })
       return
     }
 
@@ -114,8 +107,8 @@ export default async function handler(req, res) {
 
     sendJson(res, 405, { error: 'Method not allowed' })
   } catch (error) {
-    sendJson(res, 500, {
-      error: 'Unexpected server error',
+    sendJson(res, error.statusCode || 500, {
+      error: error.statusCode ? 'Likes backend error' : 'Unexpected server error',
       details: error instanceof Error ? error.message : 'Unknown error'
     })
   }

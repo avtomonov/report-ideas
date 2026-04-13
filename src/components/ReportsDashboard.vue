@@ -16,6 +16,7 @@
               round
               icon="thumb_up"
               color="positive"
+              :disable="!likesAvailable"
               :loading="likesPending[report.id] === true"
               @click="likeReport(report.id)"
             />
@@ -32,6 +33,13 @@
       <div class="likes-overview__head">
         <div class="likes-overview__title">Голосование по интересу к отчётам</div>
         <div class="likes-overview__total">Всего голосов: {{ totalLikes }}</div>
+      </div>
+      <div
+        v-if="likesStatusMessage"
+        class="likes-overview__status"
+        :class="{ 'likes-overview__status--error': !likesAvailable }"
+      >
+        {{ likesStatusMessage }}
       </div>
       <div class="likes-overview__chips">
         <div
@@ -91,8 +99,8 @@ const isRefreshing = ref(false)
 const lastUpdate = ref(new Date())
 const likesMap = ref({})
 const likesPending = ref({})
-
-const reportLikesStorageKey = 'report-likes-fallback-v1'
+const likesAvailable = ref(true)
+const likesStatusMessage = ref('')
 
 const periods = [
   { label: 'Q2 2024', value: 'Q2 2024' },
@@ -144,36 +152,34 @@ const buildEmptyLikesMap = () => {
   }, {})
 }
 
-const loadLikesFromBackend = async () => {
-  const response = await fetch('/api/report-likes')
+const readLikesResponse = async (response) => {
+  const payload = await response.json().catch(() => ({}))
+
   if (!response.ok) {
-    throw new Error('Failed to load likes from backend')
+    const error = new Error(payload.details || payload.error || 'Likes backend request failed')
+    error.statusCode = response.status
+    throw error
   }
 
-  const payload = await response.json()
+  return payload
+}
+
+const loadLikesFromBackend = async () => {
+  const response = await fetch('/api/report-likes')
+  const payload = await readLikesResponse(response)
   likesMap.value = {
     ...buildEmptyLikesMap(),
     ...(payload.likes || {})
   }
-}
-
-const loadLikesFromLocalFallback = () => {
-  try {
-    const raw = localStorage.getItem(reportLikesStorageKey)
-    likesMap.value = {
-      ...buildEmptyLikesMap(),
-      ...(raw ? JSON.parse(raw) : {})
-    }
-  } catch {
-    likesMap.value = buildEmptyLikesMap()
-  }
-}
-
-const saveLikesToLocalFallback = () => {
-  localStorage.setItem(reportLikesStorageKey, JSON.stringify(likesMap.value))
+  likesAvailable.value = true
+  likesStatusMessage.value = ''
 }
 
 const likeReport = async (reportId) => {
+  if (!likesAvailable.value) {
+    return
+  }
+
   likesPending.value = {
     ...likesPending.value,
     [reportId]: true
@@ -186,21 +192,20 @@ const likeReport = async (reportId) => {
       body: JSON.stringify({ reportId, delta: 1 })
     })
 
-    if (!response.ok) {
-      throw new Error('Failed to increment like')
-    }
-
-    const payload = await response.json()
+    const payload = await readLikesResponse(response)
     likesMap.value = {
       ...likesMap.value,
       [reportId]: payload.likeCount
     }
-  } catch {
-    likesMap.value = {
-      ...likesMap.value,
-      [reportId]: (likesMap.value[reportId] || 0) + 1
+    likesStatusMessage.value = ''
+  } catch (error) {
+    likesStatusMessage.value = error instanceof Error
+      ? error.message
+      : 'Лайки временно недоступны. Попробуйте позже.'
+
+    if (error?.statusCode === 503) {
+      likesAvailable.value = false
     }
-    saveLikesToLocalFallback()
   } finally {
     likesPending.value = {
       ...likesPending.value,
@@ -225,10 +230,15 @@ const totalLikes = computed(() => {
 })
 
 onMounted(async () => {
+  likesMap.value = buildEmptyLikesMap()
+
   try {
     await loadLikesFromBackend()
-  } catch {
-    loadLikesFromLocalFallback()
+  } catch (error) {
+    likesAvailable.value = false
+    likesStatusMessage.value = error instanceof Error
+      ? error.message
+      : 'Лайки недоступны. Настройте Redis backend.'
   }
 })
 
@@ -291,6 +301,23 @@ const refreshData = async () => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
+  }
+
+  .likes-overview__status {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.14);
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .likes-overview__status--error {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.16);
+    color: #b91c1c;
   }
 
   .likes-chip {
