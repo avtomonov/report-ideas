@@ -238,7 +238,7 @@ onMounted(async () => {
     likesAvailable.value = false
     likesStatusMessage.value = error instanceof Error
       ? error.message
-      : 'Лайки недоступны. Настройте Redis backend.'
+      : 'Лайки недоступны. Настройте Vercel базу данных.'
   }
 })
 

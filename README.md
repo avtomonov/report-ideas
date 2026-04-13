@@ -1,18 +1,21 @@
 # Report Ideas
 
-Лайки отчётов теперь хранятся в Upstash Redis через serverless API [api/report-likes.js](api/report-likes.js).
+Лайки отчётов теперь хранятся в Postgres-базе, подключённой через Vercel Storage, через serverless API [api/report-likes.js](api/report-likes.js).
 
-## Настройка Redis
+## Настройка Vercel Database
 
-1. Создайте Redis-базу в Upstash или подключите Redis integration в Vercel Marketplace.
-2. Скопируйте значения REST URL и REST Token в переменные окружения.
+1. В Vercel откройте проект и добавьте Postgres storage или Neon integration из Marketplace.
+2. После подключения Vercel обычно создаёт переменную `DATABASE_URL` автоматически.
 3. Для локальной разработки создайте файл `.env` по образцу из [.env.example](.env.example).
-4. Для Vercel добавьте те же переменные в Project Settings -> Environment Variables.
+4. Если переменная не появилась автоматически, добавьте её вручную в Project Settings -> Environment Variables.
 
-Обязательные переменные:
+Обязательная переменная:
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+- `DATABASE_URL`
+
+Совместимость:
+
+- `POSTGRES_URL` тоже поддерживается как fallback
 
 ## Локальный запуск
 
@@ -21,4 +24,4 @@ npm install
 npm run dev
 ```
 
-Если Redis не настроен, API лайков вернёт `503`, а интерфейс покажет, что голосование временно недоступно вместо локального несинхронизированного fallback.
+Если база Vercel не настроена, API лайков вернёт `503`, а интерфейс покажет, что голосование временно недоступно вместо локального несинхронизированного fallback.

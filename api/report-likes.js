@@ -1,14 +1,8 @@
-import { Redis } from '@upstash/redis'
+import { neon } from '@neondatabase/serverless'
 
-const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL
-const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN
-const redisKey = 'report_likes'
-const redis = redisUrl && redisToken
-  ? new Redis({
-      url: redisUrl,
-      token: redisToken
-    })
-  : null
+const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL
+const sql = databaseUrl ? neon(databaseUrl) : null
+let ensureSchemaPromise = null
 
 const sendJson = (res, statusCode, payload) => {
   res.statusCode = statusCode
@@ -44,33 +38,59 @@ const readBody = (req) => {
   })
 }
 
-const requireRedis = () => {
-  if (!redis) {
+const requireDatabase = () => {
+  if (!sql) {
     throw createHttpError(
       503,
-      'Likes storage is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
+      'Likes storage is not configured. Set DATABASE_URL in Vercel project settings.'
     )
   }
 
-  return redis
+  return sql
+}
+
+const ensureSchema = async () => {
+  if (!ensureSchemaPromise) {
+    const db = requireDatabase()
+    ensureSchemaPromise = db`
+      CREATE TABLE IF NOT EXISTS report_likes (
+        report_id TEXT PRIMARY KEY,
+        like_count INTEGER NOT NULL DEFAULT 0,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `
+  }
+
+  await ensureSchemaPromise
 }
 
 const getAllLikes = async () => {
-  const client = requireRedis()
-  const rawLikes = await client.hgetall(redisKey)
+  const db = requireDatabase()
+  await ensureSchema()
+  const rows = await db`SELECT report_id, like_count FROM report_likes`
   const likes = {}
 
-  for (const [key, rawValue] of Object.entries(rawLikes || {})) {
-    const value = Number(rawValue)
-    likes[key] = Number.isFinite(value) ? value : 0
+  for (const row of rows) {
+    const value = Number(row.like_count)
+    likes[row.report_id] = Number.isFinite(value) ? value : 0
   }
 
   return likes
 }
 
 const incrementLike = async (reportId, delta) => {
-  const client = requireRedis()
-  const value = Number(await client.hincrby(redisKey, reportId, delta))
+  const db = requireDatabase()
+  await ensureSchema()
+  const rows = await db`
+    INSERT INTO report_likes (report_id, like_count)
+    VALUES (${reportId}, ${delta})
+    ON CONFLICT (report_id)
+    DO UPDATE SET
+      like_count = report_likes.like_count + ${delta},
+      updated_at = NOW()
+    RETURNING like_count
+  `
+  const value = Number(rows[0]?.like_count)
   return Number.isFinite(value) ? value : 0
 }
 
@@ -80,7 +100,7 @@ export default async function handler(req, res) {
       const likes = await getAllLikes()
       sendJson(res, 200, {
         likes,
-        storage: 'upstash-redis'
+        storage: 'neon-postgres'
       })
       return
     }
@@ -95,8 +115,8 @@ export default async function handler(req, res) {
         return
       }
 
-      if (!Number.isFinite(delta)) {
-        sendJson(res, 400, { error: 'delta must be a number' })
+      if (!Number.isInteger(delta)) {
+        sendJson(res, 400, { error: 'delta must be an integer' })
         return
       }
 
